@@ -4,12 +4,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.externals import joblib
 import pandas as pd
 import os
+from sklearn.model_selection import GridSearchCV
 from utils import load_data, plotAuc, getNextVer
-from path import root, processed_train_trd_feature_path, \
-    processed_test_trd_feature_path, \
-    processed_train_tag_feature_path, \
-    processed_test_tag_feature_path, \
-    jsonPath
+from path import *
 from test import SMOTE
 
 
@@ -30,51 +27,114 @@ def trainModel(model, X_train, y_train, X_val, y_val, modelName=None, number=Non
     y_train_hat = model.predict_proba(X_train)[:, 1]
     y_val_hat = model.predict_proba(X_val)[:, 1]
 
-    plotAuc(y_train, y_train_hat)
-    plotAuc(y_val, y_val_hat)
-    return model
+    trainAuc = plotAuc(y_train, y_train_hat)
+    valAuc = plotAuc(y_val, y_val_hat)
+    print("TrainAuc: {} valAuc: {}".format(trainAuc, valAuc))
+    return model, trainAuc, valAuc
 
 ################ tag
 
-train_tag, test_tag, features, target = load_data(processed_train_tag_feature_path, processed_test_tag_feature_path,
-                                                  jsonPath)
+train_tag, test_tag, featureCols, targetCol = load_data(processed_train_tag_feature_path, processed_test_tag_feature_path,
+                                                        jsonPath)
 
 test_tag_id = test_tag.id
-valid_features = list(set(train_tag.columns.values) & set(features))
+valid_features = list(set(train_tag.columns.values) & set(featureCols))
 test_tag = test_tag[valid_features]
 
-imbalanced_arr = np.c_[train_tag[valid_features].values, train_tag[target].values]
-print("Balancing!")
-result = SMOTE(imbalanced_arr)
-result = pd.DataFrame(result, columns=valid_features + ['flag'])
-result.to_pickle("resampled_test_feature.pkl")
+def _reinbalance(features, target):
+    inbalanced_arr = np.c_[features, target]
+    print("Balancing!")
+    result = SMOTE(inbalanced_arr)
+    result = pd.DataFrame(result, columns=valid_features + ['flag'])
+    result.to_pickle("resampled_test_feature.pkl")
+    return result
+
+
+def reinbalance(features, target, update=False):
+    if update:
+        return _reinbalance(features, target)
+    if os.path.exists(reinbalanced_data_path):
+        return pd.read_pickle(reinbalanced_data_path)
+    else:
+        return _reinbalance(features, target)
+
+reinbalanced_data = reinbalance(train_tag[featureCols], train_tag[targetCol])
 
 X_train_tag, X_val_tag, y_train_tag, y_val_tag = train_test_split(
-    result[valid_features],
-    result['flag'], test_size=0.05, random_state=10
+    reinbalanced_data[valid_features],
+    reinbalanced_data['flag'], test_size=0.05, random_state=10
 )
 
-# X_train_tag, X_val_tag, y_train_tag, y_val_tag = train_test_split(
-#     train_tag[valid_features],
-#     train_tag[target], test_size=0.05, random_state=10
-# )
+X_train_tag, X_val_tag, y_train_tag, y_val_tag = train_test_split(
+    train_tag[valid_features],
+    train_tag[target], test_size=0.05, random_state=10
+)
 
 params = {
     'objective': 'binary:logistic',
     "booster": "gbtree",
-    "eta": 0.01,  # shrinkage
+    "learning_rate": 0.02,  # shrinkage
     "max_depth": 8,
-    "subsample": 0.7,
-    "colsample_bytree": 0.6,
+    "subsample": 0.5,
+    "colsample_bytree": 0.7,
     "seed": 1301,
-    "scale_pos_weight": 1
+    'n_jobs': -1
 }
-xgb_tag = trainModel(XGBClassifier(**params), X_train_tag, y_train_tag, X_val_tag, y_val_tag, modelName='xgb-tag')
 
-output = pd.DataFrame({'id': test_tag_id, 'prob': xgb_tag.predict_proba(test_tag)[:, 1] })
-output.to_csv(os.path.join(root, 'output-xgb-{}.txt'.format(getNextVer('output-xgb-(\d).txt'))), index=False, columns=None, header=False, sep='\t')
-getNextVer('output-xgb-(\d).txt')
+xgb_tag_model, trainAuc, valAuc = trainModel(XGBClassifier(**params), X_train_tag, y_train_tag, X_val_tag, y_val_tag, modelName='xgb-tag')
 
+output = pd.DataFrame({'id': test_tag_id, 'prob': xgb_tag_model.predict_proba(test_tag)[:, 1]})
+output.to_csv(os.path.join(root, 'output-xgb-{}-{:.4f}.txt'.format(getNextVer('output-xgb-(\d)-(.*).txt'), valAuc)), index=False, columns=None, header=False, sep='\t')
+
+# other_params = {
+#     'objective': 'binary:logistic',
+#     "booster": "gbtree",
+#     "learning_rate": 0.02,  # shrinkage
+#     "max_depth": 8,
+#     "subsample": 0.5,
+#     "colsample_bytree": 0.7,
+#     "seed": 1301,
+#     'n_jobs': -1
+# }
+#
+# tuned_params = {
+#     "learning_rate": [0.02, 0.1, 0.2, 0.5],  # shrinkage
+#     "max_depth": [5, 7, 10],
+#     "subsample": [0.5, 0.7, 0.9],
+#     "colsample_bytree": [0.5, 0.7, 0.9],
+# }
+#
+# def tune(modelClass, tuned_params, other_params):
+#
+#     model = modelClass(**other_params)
+#
+#     for paramName in tuned_params:
+#         print("==================================================")
+#         print('Tuning param:{} values: {}'.format(paramName,tuned_params[paramName]))
+#         clf = GridSearchCV(model, {paramName: tuned_params[paramName]}, scoring='roc_auc', cv=5, verbose=1, n_jobs=-1)
+#         clf.fit(X_train_tag, y_train_tag)
+#
+#         print("paramName: {} bestValue: {} bestScore; {}".format(
+#             paramName,
+#             clf.best_params_,
+#             clf.best_score_
+#         ))
+#
+#         model = clf.best_estimator_
+#         other_params.update(clf.best_params_)
+#
+#     return model
+#
+# best_xgb_model_tag = tune(XGBClassifier, tuned_params, other_params)
+#
+# plotAuc(
+#     y_val_tag,
+#     best_xgb_model_tag.predict_proba(X_val_tag)[:, 1]
+# )
+#
+# output = pd.DataFrame({'id': test_tag_id, 'prob': best_xgb_model_tag.predict_proba(test_tag)[:, 1]})
+# output.to_csv(os.path.join(root, 'output-xgb-{}.txt'.format(getNextVer('output-xgb-(\d).txt'))), index=False, columns=None, header=False, sep='\t')
+#
 
 ################ trd
 

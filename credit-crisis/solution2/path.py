@@ -7,6 +7,8 @@ processed_train_tag_feature_path = os.path.join(root, 'processed_train_tag_featu
 processed_test_tag_feature_path = os.path.join(root, 'processed_test_tag_feature.pkl')
 jsonPath = os.path.join(root, "colNames.json")
 
+reinbalanced_data_path = os.path.join(root, "reinbalanced_data.pkl")
+
 tagtrainPath = '/Users/ed/kaggle/credit-crisis/train/训练数据集_tag.csv'
 behtrainPath = '/Users/ed/kaggle/credit-crisis/train/训练数据集_beh.csv'
 trdtrainPath = '/Users/ed/kaggle/credit-crisis/train/训练数据集_trd.csv'

@@ -161,10 +161,6 @@ def processingTag(data, features, mappings):
         printCount(df['atdd_type'])
         df['atdd_type'].replace({'atdd_type': 2}, inplace=True)
         fillnaInplace(df['atdd_type'], '#')
-
-        # df['atdd_type'] = df['atdd_type'].astype('str')
-        # df.loc[df["atdd_type"] == r'\N', "atdd_type"] = 2
-        # df['atdd_type'] = df['atdd_type'].astype('float')
         features.append('atdd_type')
         mappings['encode'].append('atdd_type')
 

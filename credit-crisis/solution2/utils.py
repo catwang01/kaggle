@@ -17,9 +17,11 @@ def load_data(trainPath, testPath, jsonPath):
 def plotAuc(y, yhat, xlabel=None):
     fpr, tpr, thresholds = roc_curve(y, yhat, pos_label=1)
     plt.plot(fpr, tpr)
-    plt.title("auc: {}".format(auc(fpr, tpr)))
+    myauc = auc(fpr, tpr)
+    plt.title("auc: {}".format(myauc))
     if xlabel: plt.xlabel(xlabel)
     plt.show()
+    return myauc
 
 def getFreq(df):
     tmp = df.value_counts()
@@ -35,22 +37,24 @@ def dropInplace(df, condition):
 
 def trainModel(model, X_train, y_train, X_val, y_val, modelName=None, number=0):
 
+    print("==================================================")
     print("Train Model {}-{}".format(modelName, number))
     model.fit(X_train, y_train)
-
-    print("Save Model {}-{}".format(modelName, number))
-    joblib.dump(model, '{name}-{number}.model'.format(name=modelName, number=number))
 
     y_train_hat = model.predict_proba(X_train)[:, 1]
     y_val_hat = model.predict_proba(X_val)[:, 1]
 
-    plotAuc(y_train, y_train_hat, "train")
-    plotAuc(y_val, y_val_hat, "val")
+    trainAuc = plotAuc(y_train, y_train_hat, "train")
+    valAuc = plotAuc(y_val, y_val_hat, "val")
+    print("Train auc: {} Val auc: {}".format(trainAuc, valAuc))
+
+    print("Save Model {}-{}".format(modelName, number))
+    joblib.dump(model, '{name}-{number}-{valAuc}.model'.format(name=modelName, number=number, valAuc=valAuc))
     return model
 
 def getLatestVer(pattern):
     for file in sorted(os.listdir(root), key=lambda x: os.path.getctime(x), reverse=True):
-        print(file)
+        # print(file)
         ret = re.search(pattern, file)
         if ret is not None:
             i = int(ret.group(1))

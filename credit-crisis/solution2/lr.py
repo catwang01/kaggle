@@ -16,9 +16,9 @@ trainer = Trainer(modelClass=LogisticRegression,
                   other_params=other_params,
                   tuned_params=tuned_params,
                   isupdate=True,
-                  istune=False,
+                  istune=True,
                   modelName='lr',
-                  dataPath=processedDataPath)
+                  dataPath=scaledDataPath)
 
 trainer.read_data()
 trainer.fit()

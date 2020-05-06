@@ -1,6 +1,7 @@
 from sklearn.neighbors import NearestNeighbors
 from base_sampler import *
 import pandas as pd
+from path import *
 import numpy as np
 
 
@@ -47,14 +48,17 @@ def SMOTE(imbalanced_data_arr2):
     return balanced_data_arr2
 
 
-# 测试
-if __name__ == '__main__':
-    imbalanced_data = np.c_[np.random.rand(100, 2), np.random.randint(0, 2, 100)]
-    print(imbalanced_data.shape)
-    minor_data_arr2, major_data_arr2 = seperate_minor_and_major_data(imbalanced_data)
-    print(minor_data_arr2.shape)
-    print(major_data_arr2.shape)
-    # 测试SMOTE方法
-    balanced_data_arr2 = SMOTE(imbalanced_data)
-    print(balanced_data_arr2)
-    print(balanced_data_arr2.shape)
+data = np.load(processedDataPath)
+
+newdata = {
+    'y': data['y'],
+    'X_test': data['X_test'],
+    'id': data['id']
+}
+
+print("==================================================")
+print("Start smoting!")
+newdata['X'] = SMOTE(data['X'])
+print('Export file {}!'.format(reinbalancedDataPath))
+print("==================================================")
+np.savez_compressed(reinbalancedDataPath, **data)

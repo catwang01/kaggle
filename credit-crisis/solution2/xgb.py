@@ -1,12 +1,10 @@
 from xgboost import XGBClassifier
 import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.externals import joblib
 import pandas as pd
 from utils import load_data, plotAuc, getNextVer
 from path import *
-from test import SMOTE
-from baseModel import  Trainer
+from baseModel import Trainer
 
 class xgbTrainer(Trainer):
 
@@ -38,7 +36,7 @@ params = {
     "learning_rate": 0.02,  # shrinkage
     "max_depth": 12,
     "subsample": 0.6,
-    "colsample_bytree": 0.7,
+    "colsample_bytree": 0.5,
     "seed": 1301,
     'n_jobs': -1
 }

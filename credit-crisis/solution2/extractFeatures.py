@@ -486,8 +486,6 @@ def processingTag(data, features, mappings):
         df.drop(columns=['his_lng_ovd_day'], inplace=True)
         # ###### 这个不知道如何用，先drop了
 
-
-
 def castType(train, test, mappings):
     for dtype in mappings:
         for col in train.columns:
@@ -506,7 +504,6 @@ def castType(train, test, mappings):
                         test[col] = test[col].astype(dtype)
                     except:
                        print("haha: " + col)
-
 
 def process_data():
     data = {}

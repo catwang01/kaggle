@@ -58,7 +58,6 @@ def getLatestVer(pattern):
         ret = re.search(pattern, file)
         if ret is not None:
             i = int(ret.group(1))
-            print(i)
             return i
     return 0
 

@@ -12,42 +12,47 @@ from path import *
 class Trainer:
     def __init__(self, modelClass,
                  other_params, tuned_params,
-                 modelName=0, isresample=False,
-                 istune=False, isupdate=False):
-        self.isresample = isresample
+                 modelName=0,
+                 istune=False, isupdate=False,
+                 dataPath=processedDataPath):
+        self.dataPath = dataPath
         self.X_train = None
         self.y_train = None
         self.X_val = None
         self.y_val = None
-        self.featureCols = None
-        self.targetCols = None
+        self.test = None
+        self.test_id = None
         self.modelClass = modelClass
         self.other_params = other_params
         self.tuned_params = tuned_params
         self.modelName = modelName
-        self.version = getNextVer('{}-(\d).model'.format(modelName))
-        self.isupdate = True if self.version==1 else isupdate
+        version = getNextVer('{}-(\d)-.*.model'.format(modelName))
+        self.isupdate = True if version==1 else isupdate
+
+        if self.dataPath.startswith("pca"):
+            self.modelType = 'pca'
+        elif self.dataPath.startswith('rein'):
+            self.modelType = 'reinbalance'
+        else:
+            self.modelType = 'ordinal'
+
+        if self.isupdate:
+            self.modelName = '-'.join([modelName, self.modelType, str(version)])
+        else:
+            self.modelName = '-'.join([modelName, self.modelType, str(version-1)])
         self.trainAuc = None
         self.valAuc = None
         self.istune = istune
 
+
     def read_data(self):
-        self.read_train()
-
-
-    def read_train(self):
-        if self.isresample:
-            train = pd.read_pickle(reinbalanced_data_path)
-        else:
-            train = pd.read_pickle(processed_train_tag_feature_path)
-
-        with open(jsonPath) as f:
-            self.featureCols, self.targetCols = json.load(f)
-
-        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
-            train[self.featureCols],
-            train[self.targetCols], test_size=0.05, random_state=10
-        )
+        data = np.load(self.dataPath)
+        self.X_train = data['X_train']
+        self.y_train = data['y_train']
+        self.X_val = data['X_val']
+        self.y_val = data['y_val']
+        self.test = data['X_test']
+        self.test_id = np.load(testIdPath)
 
     def fit(self):
         if self.isupdate:
@@ -56,13 +61,13 @@ class Trainer:
             else:
                 self._fit()
         else:
-            self.model = joblib.load(os.path.join('{}-{}.model'.format(self.modelName, self.version-1)))
+            self.model = joblib.load(os.path.join(root, self.modelName + '.model'))
         return self.model
 
     def _fit(self):
         self.model = self.modelClass(**self.other_params)
         print("==================================================")
-        print("Train Model {}-{}".format(self.modelName, self.version))
+        print("Train Model {}".format(self.modelName))
         self.model.fit(self.X_train, self.y_train)
 
         y_train_hat = self.model.predict_proba(self.X_train)[:, 1]
@@ -72,8 +77,8 @@ class Trainer:
         self.valAuc = plotAuc(self.y_val, y_val_hat, "val")
 
         print("Train auc: {} Val auc: {}".format(self.trainAuc, self.valAuc))
-        joblib.dump(self.model, "{}-{}.model".format(self.modelName, self.version))
-        print("Save Model {}-{}".format(self.modelName, self.version))
+        joblib.dump(self.model, "{}".format(self.modelName + '.model'))
+        print("Save Model {}".format(self.modelName))
         return self.model
 
     def tune(self):
@@ -84,7 +89,7 @@ class Trainer:
             print("==================================================")
             print('Tuning param:{} values: {}'.format(paramName, self.tuned_params[paramName]))
             clf = GridSearchCV(self.model, {paramName: self.tuned_params[paramName]}, scoring='roc_auc', cv=10, verbose=1, n_jobs=-1)
-            clf.fit(self.X_train.values, self.y_train.values.ravel())
+            clf.fit(self.X_train, self.y_train)
 
             print("paramName: {} bestValue: {} bestScore; {}".format(
                 paramName,
@@ -94,22 +99,19 @@ class Trainer:
             self.model = clf.best_estimator_
             self.other_params.update(clf.best_params_)
 
-        print("Save Tuned Model {}-{}".format(self.modelName, self.version))
-        joblib.dump(self.model, "{}-{}.model".format(self.modelName, self.version))
+        print("Save Tuned Model {}".format(self.modelName))
+        joblib.dump(self.model, "{}".format(self.modelName + '.model'))
 
     def getOutput(self):
         if self.model is None:
             self.fit()
-        test = pd.read_pickle(processed_test_tag_feature_path)
-        output = pd.DataFrame({'id': test.id, 'prob': self.model.predict_proba(test[self.featureCols])[:, 1]})
+        output = pd.DataFrame({'id': self.test_id, 'prob': self.model.predict_proba(self.test)[:, 1]})
 
         if self.valAuc is None:
             self.valAuc = plotAuc(self.y_val, self.model.predict_proba(self.X_val)[:, 1])
 
-        outputPath =  os.path.join(root, 'output-{modelName}-{version}-{tune}-{valAuc:.4f}.txt'.format(
+        outputPath =  os.path.join(root, 'output-{modelName}-{valAuc:.4f}.txt'.format(
             modelName=self.modelName,
-            version=getNextVer('output-{}-(\d+).*.txt'.format(self.modelName)),
-            tune = 'resample' if self.isresample else 'ordinal',
             valAuc=self.valAuc))
         output.to_csv(outputPath, index=False, columns=None, header=False, sep='\t' )
         print("output: " + outputPath)

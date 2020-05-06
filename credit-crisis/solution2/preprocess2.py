@@ -62,17 +62,17 @@ def processingTrd(data, features, mappings):
         # data[stage]['newtrd'] = data[stage]['newtrd'].reset_index()
         # features.append('cny_trx_amt')
 
-        # printCount(df["Dat_Flg1_Cd"])
-        # mappings['encode'].append('Dat_Flg1_Cd')
-        # features.append('Dat_Flg1_Cd')
-        #
-        # printCount(df["Dat_Flg3_Cd"])
-        # mappings['encode'].append('Dat_Flg3_Cd')
-        # features.append('Dat_Flg3_Cd')
-        #
-        # printCount(df['Trx_Cod1_Cd'])
-        # mappings['encode'].append("Trx_Cod1_Cd")
-        # features.append("Trx_Cod1_Cd")
+        printCount(df["Dat_Flg1_Cd"])
+        mappings['encode'].append('Dat_Flg1_Cd')
+        features.append('Dat_Flg1_Cd')
+
+        printCount(df["Dat_Flg3_Cd"])
+        mappings['encode'].append('Dat_Flg3_Cd')
+        features.append('Dat_Flg3_Cd')
+
+        printCount(df['Trx_Cod1_Cd'])
+        mappings['encode'].append("Trx_Cod1_Cd")
+        features.append("Trx_Cod1_Cd")
 
         # 收支二级分类代码
         # 这个 test 比 train 大。先 drop 掉
@@ -378,8 +378,6 @@ def process_data():
     }
 
     features = []
-    index = np.array([True] * data['train']['tag'].shape[0])
-    target = ['flag']
     mappings = {
         'encode': [],
         'int16': [],
@@ -397,39 +395,37 @@ def process_data():
     for table in ['tag', 'trd']:
         castType(data['train'][table], data['test'][table], mappings)
 
-    train = pd.merge(data['train']['tag'], data['train']['newtrd'], on='id', how='left')
-    train = pd.merge(train, data['train']['newbeh'], on='id', how='left')
-    train.fillna(0, inplace=True)
-    encodedFeatures = train[mappings['encode']]
+    def validFeatures(df):
+        return df[list(set(df.columns.values) & set(features))]
+
+    train = pd.merge(data['train']['trd'],
+                     data['train']['tag'],
+                     on='id', how='left')
     y = train['flag']
-    train.drop(columns=mappings['encode'] + ['id', 'flag'], inplace=True)
-    onehot = OneHotEncoder()
-    trainarray = np.c_[train.values, onehot.fit_transform(encodedFeatures).toarray()]
+    train = validFeatures(train)
 
 
-    test = pd.merge(data['test']['tag'], data['test']['newtrd'], on='id', how='left')
-    test = pd.merge(test, data['test']['newbeh'], on='id', how='left')
+    train.fillna(0, inplace=True)
+
+    test = pd.merge(data['test']['trd'], data['test']['tag'], on='id', how='left')
+    # 保存 id
+    np.save(testTrdIdPath, test.id)
+
+    test = validFeatures(test)
     test.fillna(0, inplace=True)
-    encodedFeatures = test[mappings['encode']]
-    test.drop(columns=mappings['encode'] + ['id'], inplace=True)
-    testarray = np.c_[test.values, onehot.transform(encodedFeatures).toarray()]
 
+    X_train, X_val, y_train, y_val = train_test_split(train.values, y.values.ravel())
 
-    X_train, X_val, y_train, y_val = train_test_split(trainarray, y)
     data = {
         "X_train": X_train,
         "X_val": X_val,
         "y_train": y_train,
         "y_val": y_val,
-        "X_test": testarray,
+        "X_test": test.values,
     }
-    np.savez_compressed(processedDataPath, **data)
-    # train.to_pickle(processed_train_tag_feature_path)
-    # test.to_pickle(processed_test_tag_feature_path)
-    #
-    # with open(jsonPath, 'w') as f:
-    #     json.dump([features, target], f)
-    #
+
+    np.savez_compressed(processedTrdDataPath, **data)
 
 if __name__ == '__main__':
     process_data()
+

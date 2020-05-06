@@ -39,3 +39,13 @@ trainer1 = Trainer(
 trainer1.read_data()
 trainer1.fit()
 trainer1.getOutput()
+
+import numpy as np
+df = pd.DataFrame({'col':[1,2,'3']})
+
+def test(df):
+    df['col'].replace({'3': 2}, inplace=True)
+
+test(df)
+df.dtypes
+

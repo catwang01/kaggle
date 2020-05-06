@@ -11,7 +11,7 @@ from path import *
 
 class Trainer:
     def __init__(self, modelClass,
-                 other_params, tuned_params,
+                 other_params=None, tuned_params=None,
                  modelName=0,
                  istune=False, isupdate=False,
                  dataPath=processedDataPath):
@@ -42,17 +42,18 @@ class Trainer:
             self.modelName = '-'.join([modelName, self.modelType, str(version-1)])
         self.trainAuc = None
         self.valAuc = None
-        self.istune = istune
+
+        if tuned_params is None:
+            self.istune = False
+        else:
+            self.istune = istune
 
 
     def read_data(self):
         data = np.load(self.dataPath)
-        self.X_train = data['X_train']
-        self.y_train = data['y_train']
-        self.X_val = data['X_val']
-        self.y_val = data['y_val']
+        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(data['X'], data['y'], random_state=1, test_size=0.2)
         self.test = data['X_test']
-        self.test_id = np.load(testIdPath)
+        self.test_id = data['id']
 
     def fit(self):
         if self.isupdate:
@@ -105,6 +106,7 @@ class Trainer:
     def getOutput(self):
         if self.model is None:
             self.fit()
+        self.test_id
         output = pd.DataFrame({'id': self.test_id, 'prob': self.model.predict_proba(self.test)[:, 1]})
 
         if self.valAuc is None:

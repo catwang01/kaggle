@@ -19,8 +19,11 @@ tagtestPath = '/Users/ed/kaggle/credit-crisis/test/评分数据集_tag.csv'
 behtestPath = '/Users/ed/kaggle/credit-crisis/test/评分数据集_beh.csv'
 trdtestPath = '/Users/ed/kaggle/credit-crisis/test/评分数据集_trd.csv'
 
-
 pcaDataPath = os.path.join(root, 'pcaData.npz')
-testIdPath = os.path.join(root, 'id.npy')
+testIdPath = os.path.join(root, 'testId.npy')
+testTrdIdPath = os.path.join(root, 'testTrdId.npy')
 processedDataPath = os.path.join(root, 'processedData.npz')
+processedTrdDataPath = os.path.join(root, 'processedTrdData.npz')
 scaledDataPath = os.path.join(root, 'scaledData.npz')
+
+

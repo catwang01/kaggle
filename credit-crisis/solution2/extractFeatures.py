@@ -44,7 +44,6 @@ def processingBeh(data, features, mappings):
     data['train']['newbeh']= dftrain.groupby(['id'], as_index=False)['page_tm'].count()
     data['test']['newbeh']= dftest.groupby(['id'], as_index=False)['page_tm'].count()
 
-    # 29 个features
     features.update(
         list(data['train']['newbeh'].columns.values)
     )

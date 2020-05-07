@@ -47,7 +47,6 @@ def SMOTE(imbalanced_data_arr2):
     balanced_data_arr2 = concat_and_shuffle_data(new_minor_data_arr2, major_data_arr2)
     return balanced_data_arr2
 
-
 data = np.load(processedDataPath)
 
 newdata = {

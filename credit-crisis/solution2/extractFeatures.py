@@ -58,34 +58,10 @@ def processingTrd(data, features, mappings):
         df = data[stage]['trd']
         df['cny_trx_amt'] = df['cny_trx_amt'].astype(float)
 
-        # 感觉Trx_Cod1_Cd还听有用的
-        if args.verbose:
-            sns.boxplot(x='Trx_Cod1_Cd', y='cny_trx_amt', data=df); plt.show()
-            sns.FacetGrid(df , hue="Trx_Cod1_Cd", height=6) \
-                .map(sns.kdeplot, "cny_trx_amt") \
-                .add_legend()
-            plt.show()
-            plt.close()
-
-        labels = []
-        for idx in ['Dat_Flg1_Cd', 'Dat_Flg3_Cd', 'Trx_Cod1_Cd']:
-            labels.append(set(df[idx]))
-
-        allCombinations = set()
-        for x in labels[0]:
-            for y in labels[1]:
-                for z in labels[2]:
-                    allCombinations.add(x + y + z)
-
-        data[stage]['newtrd'] = df.groupby(['id', 'Dat_Flg1_Cd', 'Dat_Flg3_Cd', 'Trx_Cod1_Cd'], as_index=False)['cny_trx_amt'].agg(np.mean)
-        data[stage]['newtrd'] = data[stage]['newtrd']
-        data[stage]['newtrd']['newcol'] = data[stage]['newtrd']['Dat_Flg1_Cd'].str.cat(data[stage]['newtrd']['Dat_Flg3_Cd']).str.cat(data[stage]['newtrd']['Trx_Cod1_Cd'])
-        data[stage]['newtrd'] = data[stage]['newtrd'].pivot(columns='newcol', values='cny_trx_amt', index='id').fillna(0)
-
-        for idx in allCombinations - set(data[stage]['newtrd']) - {'id'}:
-            data[stage]['newtrd'][idx] = np.zeros(data[stage]['newtrd'].shape[0])
-
-        data[stage]['newtrd'].columns = list(map(lambda x: 'cny_trx_amt_' + x, data[stage]['newtrd'].columns))
+        data[stage]['newtrd'] = df.groupby(['id', 'Dat_Flg1_Cd'], as_index=False)['cny_trx_amt'].sum()
+        data[stage]['newtrd'] = data[stage]['newtrd'].pivot(index='id', columns='Dat_Flg1_Cd', values='cny_trx_amt')
+        data[stage]['newtrd'].fillna(0, inplace=True)
+        data[stage]['newtrd'].columns = list(map(lambda x: 'Dat_Flg1_Cd' + "_" + x,  data[stage]['newtrd'].columns))
         data[stage]['newtrd'] = data[stage]['newtrd'].reset_index()
 
     # 交易金额

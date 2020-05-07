@@ -22,6 +22,7 @@ class Trainer:
         self.y_val = None
         self.test = None
         self.test_id = None
+        self.feature_names = None
         self.modelClass = modelClass
         self.other_params = other_params
         self.tuned_params = tuned_params
@@ -48,12 +49,12 @@ class Trainer:
         else:
             self.istune = istune
 
-
     def read_data(self):
         data = np.load(self.dataPath)
         self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(data['X'], data['y'], random_state=1, test_size=0.2)
         self.test = data['X_test']
         self.test_id = data['id']
+        self.feature_names = data['feature_names']
 
     def fit(self):
         if self.isupdate:
@@ -106,7 +107,6 @@ class Trainer:
     def getOutput(self):
         if self.model is None:
             self.fit()
-        self.test_id
         output = pd.DataFrame({'id': self.test_id, 'prob': self.model.predict_proba(self.test)[:, 1]})
 
         if self.valAuc is None:
@@ -117,7 +117,4 @@ class Trainer:
             valAuc=self.valAuc))
         output.to_csv(outputPath, index=False, columns=None, header=False, sep='\t' )
         print("output: " + outputPath)
-
-
-
 

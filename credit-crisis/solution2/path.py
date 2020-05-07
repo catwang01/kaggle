@@ -21,6 +21,6 @@ trdtestPath = '/Users/ed/kaggle/credit-crisis/test/评分数据集_trd.csv'
 pcaDataPath = os.path.join(root, 'pcaData.npz')
 processedDataPath = os.path.join(root, 'processedData.npz')
 scaledDataPath = os.path.join(root, 'scaledData.npz')
-reinbalancedDataPath = os.path.join(root, "reinbalancedData.npy")
+reinbalancedDataPath = os.path.join(root, "reinbalancedData.npz")
 
 

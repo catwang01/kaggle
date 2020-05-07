@@ -1,4 +1,5 @@
 from sklearn.metrics import roc_curve, auc
+import numpy as np
 from sklearn.externals import  joblib
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -27,13 +28,34 @@ def getFreq(df):
     tmp = df.value_counts()
     return tmp / tmp.sum()
 
+def isOutiler(df) -> bool:
+    # 下四分位数值、中位数，上四分位数值
+    Q1, median, Q3 = np.percentile(df, (25, 50, 75), interpolation='midpoint')
+    # 四分位距
+    IQR = Q3 - Q1
+
+    # 内限
+    inner = [Q1 - 1.5 * IQR, Q3 + 1.5 * IQR]
+    # 外限
+    outer = [Q1 - 3.0 * IQR, Q3 + 3.0 * IQR]
+    print('>>>内限：', inner)
+    print('>>>外限：', outer)
+
+    # 过滤掉极端异常值
+    return (df < outer[0]) | (df > outer[1])
+
+
 def fillnaInplace(df, val):
     df.fillna(val, inplace=True)
 
 
-def dropInplace(df, condition):
+def dropInplaceByCondition(df, condition):
     df.drop(df.index[condition], inplace=True)
 
+def dropColumnInplace(df, columns):
+    if isinstance(columns, str):
+        columns = [columns]
+    df.drop(columns=columns, inplace=True)
 
 def trainModel(model, X_train, y_train, X_val, y_val, modelName=None, number=0):
 

@@ -6,7 +6,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
-from utils import plotAuc, getFreq, fillnaInplace, dropInplace
+from utils import plotAuc, getFreq, fillnaInplace, dropInplaceByCondition
 from path import *
 import json
 import numpy as np

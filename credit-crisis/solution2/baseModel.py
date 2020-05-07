@@ -57,14 +57,6 @@ class Trainer:
         else:
             self.istune = istune
 
-    def read_data(self):
-        data = np.load(self.dataPath)
-        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(data['X'], data['y'], random_state=SEED,
-                                                                              test_size=self.test_size)
-        self.test = data['X_test']
-        self.test_id = data['test_id']
-        self.feature_names = data['feature_names']
-
     def fit(self, *args, **kwargs):
         if self.isupdate:
             if self.istune:
@@ -74,6 +66,9 @@ class Trainer:
         else:
             self.model = joblib.load(os.path.join(root, self.modelName + '.model'))
         return self.model
+
+    def predict(self, X):
+        return self.model.predict_proba(X)
 
     def _fit(self, *args, **kwargs):
         print("==================================================")

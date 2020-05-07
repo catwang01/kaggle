@@ -1,20 +1,14 @@
 from sklearn.metrics import roc_curve, auc
+from sklearn.model_selection import train_test_split
 import time
 import numpy as np
+from path import *
 from sklearn.externals import  joblib
 import pandas as pd
 import matplotlib.pyplot as plt
-import json
 from path import root
 import os
 import re
-
-def load_data(trainPath, testPath, jsonPath):
-    train = pd.read_pickle(trainPath )
-    test = pd.read_pickle(testPath)
-    with open(jsonPath) as f:
-        features, target = json.load(f)
-    return train, test, features, target
 
 def plotAuc(y, yhat, xlabel=None):
     fpr, tpr, thresholds = roc_curve(y, yhat, pos_label=1)
@@ -24,6 +18,10 @@ def plotAuc(y, yhat, xlabel=None):
     if xlabel: plt.xlabel(xlabel)
     plt.show()
     return myauc
+
+def load_data(dataPath):
+    data = np.load(dataPath)
+    return data['X'], data['y'], data['X_test'], data['test_id'], data['feature_names']
 
 def getFreq(df):
     tmp = df.value_counts()

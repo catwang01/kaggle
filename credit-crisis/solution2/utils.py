@@ -1,4 +1,5 @@
 from sklearn.metrics import roc_curve, auc
+import time
 import numpy as np
 from sklearn.externals import  joblib
 import pandas as pd
@@ -87,3 +88,15 @@ def getNextVer(pattern):
     return getLatestVer(pattern) + 1
 
 
+def timeit(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        val = func(*args, **kwargs)
+        time_elapsed = time.time() - start
+        print('func: {name} used time {h}:{m}:{s}'.format(name=func.__name__,
+                                                          h=int(time_elapsed / 3600),
+                                                          m = int(time_elapsed / 60 % 60),
+                                                          s = int(time_elapsed % 3600)
+                                                          ))
+        return val
+    return wrapper

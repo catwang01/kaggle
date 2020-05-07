@@ -10,7 +10,7 @@ other_params = {
     'n_jobs': -1,
     'n_estimators': 20,
     'max_depth': 12,
-    'random_state': 4
+    'random_state': SEED
 }
 
 tuned_params = {
@@ -42,6 +42,7 @@ plt.show()
 plt.plot(np.cumsum(sorted_importances))
 plt.title("累计贡献")
 plt.show()
+
 sorted_featurenames[:10]
 sorted_featurenames
 

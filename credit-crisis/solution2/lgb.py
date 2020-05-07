@@ -16,7 +16,7 @@ params = {
     # "n_estimators": 1000,
     "subsample": 0.7,
     "colsample_bytree": 1,
-    "seed": 1301,
+    "seed": SEED,
     'n_jobs': -1,
     'silent': 0,
 }
@@ -27,7 +27,7 @@ tuned_params = {
     "subsample": [0.5, 0.6, 0.7, 0.8],
     'reg_lambda': [0.01, 0.2, 0.5, 0.8],
     "colsample_bytree": [0.3, 0.5, 0.7, 0.8],
-    "seed": [1, 2, 3, 4]
+    # "seed": [1, 2, 3, 4]
 }
 
 

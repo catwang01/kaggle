@@ -59,7 +59,7 @@ class Trainer:
 
     def read_data(self):
         data = np.load(self.dataPath)
-        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(data['X'], data['y'], random_state=1,
+        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(data['X'], data['y'], random_state=SEED,
                                                                               test_size=self.test_size)
         self.test = data['X_test']
         self.test_id = data['test_id']

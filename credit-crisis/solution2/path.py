@@ -1,6 +1,7 @@
 import os
 
 SEED = 12345
+TEST_SIZE = 0.2
 root = os.path.dirname(__file__)
 # processed_train_trd_feature_path = os.path.join(root, 'processed_train_trd_feature.pkl')
 # processed_test_trd_feature_path = os.path.join(root, 'processed_test_trd_feature.pkl')

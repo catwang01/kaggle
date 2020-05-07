@@ -1,4 +1,7 @@
 from matplotlib import  pyplot as plt
+from utils import load_data
+from baseModel import ortTrainer, baseTrainer
+from sklearn.model_selection import train_test_split
 from path import *
 from sklearn.ensemble import RandomForestClassifier
 from baseModel import ortTrainer
@@ -19,18 +22,20 @@ tuned_params = {
     # 'random_state': [1,2,3,4,5]
 }
 
+X_train, y_train, X_test, test_id, feature_names = load_data(processedDataPath)
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, random_state=SEED, test_size=TEST_SIZE)
 trainer = ortTrainer(modelClass=RandomForestClassifier,
-                  params=other_params,
-                  tuned_params=tuned_params,
-                  isupdate=True, istune=True,
-                  modelName='rf', cv = 5, dataPath=processedDataPath)
+                      params=other_params,
+                      tuned_params=tuned_params,
+                      isupdate=True, istune=True,
+                      modelName='rf', cv=5)
 
-trainer.read_data()
-trainer.fit()
-output = trainer.getOutput()
 
+trainer.fit(X_train, y_train, X_val, y_val)
+output = trainer.getOutput(X_test, test_id, X_val, y_val)
 bestResult = pd.read_csv('currentBest.txt', header=None, sep='\t')
 bestResult.columns = ['id', 'prob']
+
 
 pccs = pearsonr(output['prob'], bestResult['prob'])
 print("Score prediction: {}".format(pccs))

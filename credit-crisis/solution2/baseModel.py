@@ -14,21 +14,12 @@ pd.set_option('display.max_columns', 20)
 pd.set_option('display.width', 60)
 
 
-class Trainer:
+class baseTrainer:
     def __init__(self, modelClass,
                  params=None, tuned_params=None, modelName=0,
-                 istune=False, isupdate=False, cv=5,
-                 test_size=0.05, dataPath=processedDataPath):
-        self.dataPath = dataPath
-        self.test_size = test_size
-        self.X_train = None
-        self.y_train = None
-        self.X_val = None
-        self.y_val = None
+                 istune=False, isupdate=False, cv=5):
         self.modelClass = modelClass
         self.params = params
-        self.test = None
-        self.test_id = None
         self.model = modelClass(**params)
         self.cv = cv
         self.feature_names = None
@@ -38,31 +29,22 @@ class Trainer:
         version = getNextVer('{}-.*-(\d+).model'.format(modelName))
         self.isupdate = True if version == 1 else isupdate
 
-        if self.dataPath.startswith("pca"):
-            self.modelType = 'pca'
-        elif self.dataPath.startswith('rein'):
-            self.modelType = 'reinbalance'
-        else:
-            self.modelType = 'ordinal'
-
         if self.isupdate:
-            self.modelName = '-'.join([modelName, self.modelType, str(version)])
+            self.modelName = '-'.join([modelName, str(version)])
         else:
-            self.modelName = '-'.join([modelName, self.modelType, str(version - 1)])
-        self.trainAuc = None
-        self.valAuc = None
+            self.modelName = '-'.join([modelName, str(version - 1)])
 
         if tuned_params is None:
             self.istune = False
         else:
             self.istune = istune
 
-    def fit(self, *args, **kwargs):
+    def fit(self, X_train, y_train, X_val, y_val, *args, **kwargs):
         if self.isupdate:
             if self.istune:
-                self.tune(*args, **kwargs)
+                self.tune(X_train, y_train, X_val, y_val, *args, **kwargs)
             else:
-                self._fit(*args, **kwargs)
+                self._fit(X_train, y_train, X_val, y_val, *args, **kwargs)
         else:
             self.model = joblib.load(os.path.join(root, self.modelName + '.model'))
         return self.model
@@ -70,35 +52,35 @@ class Trainer:
     def predict(self, X):
         return self.model.predict_proba(X)
 
-    def _fit(self, *args, **kwargs):
+    def _fit(self, X_train, y_train, X_val, y_val, *args, **kwargs):
         print("==================================================")
         print("Train Model {}".format(self.modelName))
-        self.model.fit(self.X_train, self.y_train, *args, **kwargs)
+        self.model.fit(X_train, y_train, *args, **kwargs)
 
-        y_train_hat = self.model.predict_proba(self.X_train)[:, 1]
-        y_val_hat = self.model.predict_proba(self.X_val)[:, 1]
+        y_train_hat = self.model.predict_proba(X_train)[:, 1]
+        y_val_hat = self.model.predict_proba(X_val)[:, 1]
 
-        self.trainAuc = plotAuc(self.y_train, y_train_hat, "train")
-        self.valAuc = plotAuc(self.y_val, y_val_hat, "val")
+        trainAuc = plotAuc(y_train, y_train_hat, "train")
+        valAuc = plotAuc(y_val, y_val_hat, "val")
 
-        print("Train auc: {} Val auc: {}".format(self.trainAuc, self.valAuc))
+        print("Train auc: {} Val auc: {}".format(trainAuc, valAuc))
         joblib.dump(self.model, "{}".format(self.modelName + '.model'))
         print("Save Model {}".format(self.modelName))
         return self.model
 
-    def tune(self, *args, **kwargs):
+    def tune(self, X_train, y_train, X_val, y_val, *args, **kwargs):
 
         for paramName in self.tuned_params:
             print("==================================================")
             print('Tuning param:{} values: {}'.format(paramName, self.tuned_params[paramName]))
             clf = GridSearchCV(self.model, {paramName: self.tuned_params[paramName]}, scoring='roc_auc', cv=self.cv,
                                verbose=1, n_jobs=-1)
-            clf.fit(self.X_train, self.y_train)
+            clf.fit(X_train, y_train)
 
             print("paramName: {} bestValue: {} TestScore: {} bestValScore; {}".format(
                 paramName,
                 clf.best_params_,
-                plotAuc(self.y_train, clf.predict_proba(self.X_train)[:, -1]),
+                plotAuc(y_train, clf.predict_proba(X_train)[:, -1]),
                 clf.best_score_
             ))
             self.model = clf.best_estimator_
@@ -107,81 +89,30 @@ class Trainer:
         print("Save Tuned Model {}".format(self.modelName))
         joblib.dump(self.model, "{}".format(self.modelName + '.model'))
 
-    def getOutput(self):
-        output = pd.DataFrame({'id': self.test_id, 'prob': self.model.predict_proba(self.test)[:, 1]})
+    def getOutput(self, X_test, test_id, X_val, y_val):
+        output = pd.DataFrame({'id': test_id, 'prob': self.model.predict_proba(X_test)[:, 1]})
 
-        if self.valAuc is None:
-            self.valAuc = plotAuc(self.y_val, self.model.predict_proba(self.X_val)[:, 1])
+        valAuc = plotAuc(y_val, self.model.predict_proba(X_val)[:, 1])
 
         outputPath = os.path.join(root, 'output-{modelName}-{valAuc:.4f}.txt'.format(
             modelName=self.modelName,
-            valAuc=self.valAuc))
+            valAuc=valAuc))
         output.to_csv(outputPath, index=False, columns=None, header=False, sep='\t')
         print("output: " + outputPath)
         return output
 
 
-# class xgbTrainer(Trainer):
-#
-#     def _fit(self):
-#         print("==================================================")
-#         print("Train Model {}".format(self.modelName))
-#         self.model.fit(self.X_train, self.y_train,
-#                        eval_set=[(self.X_val, self.y_val)],
-#                        early_stopping_rounds=10,
-#                        eval_metric="auc",
-#                        verbose=True)
-#
-#         y_train_hat = self.model.predict_proba(self.X_train)[:, 1]
-#         y_val_hat = self.model.predict_proba(self.X_val)[:, 1]
-#
-#         self.trainAuc = plotAuc(self.y_train, y_train_hat, "train")
-#         self.valAuc = plotAuc(self.y_val, y_val_hat, "val")
-#
-#         print("Train auc: {} Val auc: {}".format(self.trainAuc, self.valAuc))
-#         joblib.dump(self.model, "{}".format(self.modelName + '.model'))
-#         print("Save Model {}".format(self.modelName))
-#         return self.model
-#
-#
-# class lgbTrainer(Trainer):
-#
-#     def _fit(self):
-#         print("==================================================")
-#         print("Train Model {}".format(self.modelName))
-#         self.model.fit(self.X_train, self.y_train,
-#                        eval_set=[(self.X_val, self.y_val)],
-#                        early_stopping_rounds=10,
-#                        eval_metric="auc",
-#                        verbose=True)
-#
-#         y_train_hat = self.model.predict_proba(self.X_train)[:, 1]
-#         y_val_hat = self.model.predict_proba(self.X_val)[:, 1]
-#
-#         self.trainAuc = plotAuc(self.y_train, y_train_hat, "train")
-#         self.valAuc = plotAuc(self.y_val, y_val_hat, "val")
-#
-#         print("Train auc: {} Val auc: {}".format(self.trainAuc, self.valAuc))
-#         joblib.dump(self.model, "{}".format(self.modelName + '.model'))
-#         print("Save Model {}".format(self.modelName))
-#         return self.model
-#
-
-class ortTrainer(Trainer):
+class ortTrainer(baseTrainer):
 
     def __init__(self, modelClass,
                  params=None, tuned_params=None, modelName=0,
-                 istune=False, isupdate=False, cv=5,
-                 test_size=0.05, dataPath=processedDataPath):
+                 istune=False, isupdate=False, cv=5):
 
         super(ortTrainer, self).__init__(modelClass,
                                          params=params, tuned_params=tuned_params,
                                          modelName=modelName,
                                          istune=istune, isupdate=isupdate,
-                                         cv=cv,
-                                         test_size=test_size,
-                                         dataPath=dataPath)
-
+                                         cv=cv)
         # 构建正交实验表
         self.ort = ORT()
 
@@ -191,7 +122,8 @@ class ortTrainer(Trainer):
         self.ort_res = None
         self.bestParams = None
 
-    def tune(self, *args, **kwargs):
+    def tune(self, X_train, y_train, X_val, y_val, *args, **kwargs):
+
         df_params = self.param_df
         cur = 0
         total = len(df_params.index)
@@ -214,12 +146,12 @@ class ortTrainer(Trainer):
             params.update(tmp)
             model = self.modelClass(**params)
             time_start = time.time()
-            model.fit(self.X_train, self.y_train, *args, **kwargs)
+            model.fit(X_train, y_train, *args, **kwargs)
             time_elapsed = int(time.time() - time_start)
-            fpr, tpr, _ = roc_curve(self.y_train, model.predict_proba(self.X_train)[:, 1])
+            fpr, tpr, _ = roc_curve(y_train, model.predict_proba(X_train)[:, 1])
             res = auc(fpr, tpr)
 
-            fpr, tpr, _ = roc_curve(self.y_val, model.predict_proba(self.X_val)[:, 1])
+            fpr, tpr, _ = roc_curve(y_val, model.predict_proba(X_val)[:, 1])
             res_val = auc(fpr, tpr)
             print(tmp)
             print('res: {res:.4f}, res_val: {res_val:.4f} , time: {time}, num: {cur}/{total}'.format(res=res,
@@ -243,5 +175,5 @@ class ortTrainer(Trainer):
         ))
 
         self.model = self.modelClass(**self.bestParams)
-        self.model.fit(self.X_train, self.y_train, *args, **kwargs)
+        self.model.fit(X_train, y_train, *args, **kwargs)
         return self.model

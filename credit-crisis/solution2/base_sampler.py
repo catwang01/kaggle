@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-def seperate_minor_and_major_data(imbalanced_data_arr2):
+def seperate_minor_and_major_data(imbalanced_data_arr2, labels=None):
     """
     将训练数据分开为少数据类数据集和多数类数据集
     :param imbalanced_data_arr2: 非平衡数集
@@ -9,7 +9,10 @@ def seperate_minor_and_major_data(imbalanced_data_arr2):
     """
 
     # 提取类别标签一维数组，并提取出两类类别标签标记
-    labels_arr1 = imbalanced_data_arr2[:, -1]
+    if labels is None:
+        labels_arr1 = imbalanced_data_arr2[:, -1]
+    else:
+        labels_arr1 = labels
     unique_labels_arr1 = np.unique(labels_arr1)
     if len(unique_labels_arr1) != 2:
         print('数据类别大于2，错误！')

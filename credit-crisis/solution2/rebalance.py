@@ -51,14 +51,17 @@ def SMOTE(imbalanced_data_arr2):
 data = np.load(processedDataPath)
 
 newdata = {
-    'y': data['y'],
     'X_test': data['X_test'],
-    'id': data['id']
+    'id': data['id'],
+    'feature_names': data['feature_names']
 }
 
 print("==================================================")
 print("Start smoting!")
-newdata['X'] = SMOTE(data['X'])
+transformed = SMOTE(np.c_[data['X'], data['y']])
+newdata['X'] = transformed[:, :-1]
+newdata['y'] = transformed[:, -1]
+assert newdata['X'].shape[1] == data['X'].shape[1]
 print('Export file {}!'.format(reinbalancedDataPath))
 print("==================================================")
-np.savez_compressed(reinbalancedDataPath, **data)
+np.savez_compressed(reinbalancedDataPath, **newdata)

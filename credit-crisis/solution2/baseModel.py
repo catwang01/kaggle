@@ -14,6 +14,7 @@ class Trainer:
                  other_params=None, tuned_params=None,
                  modelName=0,
                  istune=False, isupdate=False,
+                 cv = 10,
                  dataPath=processedDataPath):
         self.dataPath = dataPath
         self.X_train = None
@@ -22,6 +23,7 @@ class Trainer:
         self.y_val = None
         self.test = None
         self.test_id = None
+        self.cv = cv
         self.feature_names = None
         self.modelClass = modelClass
         self.other_params = other_params
@@ -90,12 +92,13 @@ class Trainer:
         for paramName in self.tuned_params:
             print("==================================================")
             print('Tuning param:{} values: {}'.format(paramName, self.tuned_params[paramName]))
-            clf = GridSearchCV(self.model, {paramName: self.tuned_params[paramName]}, scoring='roc_auc', cv=10, verbose=1, n_jobs=-1)
+            clf = GridSearchCV(self.model, {paramName: self.tuned_params[paramName]}, scoring='roc_auc', cv=self.cv, verbose=1, n_jobs=-1)
             clf.fit(self.X_train, self.y_train)
 
-            print("paramName: {} bestValue: {} bestScore; {}".format(
+            print("paramName: {} bestValue: {} TestScore: {} bestValScore; {}".format(
                 paramName,
                 clf.best_params_,
+                plotAuc(self.y_train, clf.predict_proba(self.X_train)[:, -1]),
                 clf.best_score_
             ))
             self.model = clf.best_estimator_
@@ -117,4 +120,5 @@ class Trainer:
             valAuc=self.valAuc))
         output.to_csv(outputPath, index=False, columns=None, header=False, sep='\t' )
         print("output: " + outputPath)
+        return output
 

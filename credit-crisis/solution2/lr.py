@@ -13,7 +13,7 @@ tuned_params = {
 }
 
 trainer = Trainer(modelClass=LogisticRegression,
-                  other_params=other_params,
+                  params=other_params,
                   tuned_params=tuned_params,
                   isupdate=True,
                   istune=True,

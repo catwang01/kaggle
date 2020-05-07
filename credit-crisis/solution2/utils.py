@@ -18,8 +18,8 @@ def load_data(trainPath, testPath, jsonPath):
 
 def plotAuc(y, yhat, xlabel=None):
     fpr, tpr, thresholds = roc_curve(y, yhat, pos_label=1)
-    plt.plot(fpr, tpr)
     myauc = auc(fpr, tpr)
+    plt.plot(fpr, tpr)
     plt.title("auc: {}".format(myauc))
     if xlabel: plt.xlabel(xlabel)
     plt.show()

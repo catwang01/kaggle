@@ -1,7 +1,7 @@
-from baseModel import Trainer
-from sklearn.ensemble import RandomForestClassifier
 from matplotlib import  pyplot as plt
 from path import *
+from sklearn.ensemble import RandomForestClassifier
+from baseModel import ortTrainer
 from scipy.stats import pearsonr
 import pandas as pd
 import numpy as np
@@ -19,14 +19,11 @@ tuned_params = {
     # 'random_state': [1,2,3,4,5]
 }
 
-trainer = Trainer(modelClass=RandomForestClassifier,
-                  other_params=other_params,
+trainer = ortTrainer(modelClass=RandomForestClassifier,
+                  params=other_params,
                   tuned_params=tuned_params,
-                  isupdate=True,
-                  istune=True,
-                  modelName='rf',
-                  cv = 5,
-                  dataPath=processedDataPath)
+                  isupdate=True, istune=True,
+                  modelName='rf', cv = 5, dataPath=processedDataPath)
 
 trainer.read_data()
 trainer.fit()

@@ -5,7 +5,8 @@ from path import *
 data = np.load(processedDataPath)
 newdata = {
     'y': data['y'],
-    'id': data['id']
+    'test_id': data['test_id'],
+    'feature_names': data['feature_names']
 }
 
 scaler = StandardScaler()

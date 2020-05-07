@@ -14,9 +14,11 @@ class Trainer:
                  other_params=None, tuned_params=None,
                  modelName=0,
                  istune=False, isupdate=False,
-                 cv = 10,
+                 cv = 5,
+                 test_size=0.05,
                  dataPath=processedDataPath):
         self.dataPath = dataPath
+        self.test_size = test_size
         self.X_train = None
         self.y_train = None
         self.X_val = None
@@ -29,7 +31,7 @@ class Trainer:
         self.other_params = other_params
         self.tuned_params = tuned_params
         self.modelName = modelName
-        version = getNextVer('{}-(\d)-.*.model'.format(modelName))
+        version = getNextVer('{}-.*-(\d).model'.format(modelName))
         self.isupdate = True if version==1 else isupdate
 
         if self.dataPath.startswith("pca"):
@@ -53,9 +55,9 @@ class Trainer:
 
     def read_data(self):
         data = np.load(self.dataPath)
-        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(data['X'], data['y'], random_state=1, test_size=0.2)
+        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(data['X'], data['y'], random_state=1, test_size=self.test_size)
         self.test = data['X_test']
-        self.test_id = data['id']
+        self.test_id = data['test_id']
         self.feature_names = data['feature_names']
 
     def fit(self):

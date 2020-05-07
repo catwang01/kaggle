@@ -51,7 +51,7 @@ data = np.load(processedDataPath)
 
 newdata = {
     'X_test': data['X_test'],
-    'id': data['id'],
+    'test_id': data['test_id'],
     'feature_names': data['feature_names']
 }
 

@@ -7,7 +7,8 @@ data = np.load(scaledDataPath)
 
 newdata = {
     'y': data['y'],
-    'id': data['id']
+    'test_id': data['test_id'],
+    'feature_names': data['feature_names']
 }
 pca = PCA(n_components=0.999999)
 newdata['X'] = pca.fit_transform(data['X'])

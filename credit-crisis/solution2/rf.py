@@ -8,23 +8,25 @@ import numpy as np
 
 other_params = {
     'n_jobs': -1,
-    'n_estimators': 30,
+    'n_estimators': 20,
     'max_depth': 12,
+    'random_state': 4
 }
 
 tuned_params = {
     'n_estimators': [10, 20, 30, 40, 50, 60],
-    'max_depth': [10, 15, 20, 25, 30]
+    'max_depth': [8, 9, 10, 12, 15, 20],
+    # 'random_state': [1,2,3,4,5]
 }
 
 trainer = Trainer(modelClass=RandomForestClassifier,
                   other_params=other_params,
                   tuned_params=tuned_params,
                   isupdate=True,
-                  istune=False,
+                  istune=True,
                   modelName='rf',
-                  dataPath=reinbalancedDataPath)
-
+                  cv = 5,
+                  dataPath=processedDataPath)
 
 trainer.read_data()
 trainer.fit()
@@ -49,6 +51,7 @@ sorted_featurenames
 
 # 感觉 cny不需要分很细
 # page_no 也不需要
+# l12_mon_tms 貌似也一般
 # ('gdr_cd',
 #  'hav_car_grp_ind',
 #  'hld_crd_card_grd_cd',

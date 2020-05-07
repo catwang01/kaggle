@@ -157,7 +157,7 @@ def processingTag(data, features, mappings):
         # 对年龄分桶
         printCount(df['age'])
         df['age'] = df['age'].astype('int8')
-        df['age'].hist(); plt.show()
+        df['age'].hist(); plt.show(); plt.close()
         df['newage'] = pd.cut(df['age'], bins=[0,20,30,40,60,100], labels=False)
         features.add('newage')
         mappings['encode'].append('newage')
@@ -204,7 +204,7 @@ def processingTag(data, features, mappings):
         # 工作年限
         printCount(df['job_year'])
         df['job_year'].replace({r'\N': '0'}, inplace=True)
-        df['job_year'].value_counts().hist(); plt.show()
+        df['job_year'].value_counts().hist(); plt.show(); plt.close()
         df['job_year'] = df['job_year'].astype(int)
         df['new_job_year'] = pd.cut(df['job_year'], bins=[-1, 0, 5, 8, 100])
         df['new_job_year'].value_counts()
@@ -376,26 +376,21 @@ def processingTag(data, features, mappings):
         printCount(df['l12_mon_fnd_buy_whl_tms'])
         df['l12_mon_fnd_buy_whl_tms'].replace({r'\N': '0'}, inplace=True)
         df['l12_mon_fnd_buy_whl_tms'] = df['l12_mon_fnd_buy_whl_tms'].astype('int16')
-        # features.add('l12_mon_fnd_buy_whl_tms')
-        # mappings['int16'].append('l12_mon_fnd_buy_whl_tms')
 
         # 近12个月保险购买次数
         printCount(df['l12_mon_insu_buy_whl_tms'])
         df['l12_mon_insu_buy_whl_tms'].replace({r'\N': '0'}, inplace=True)
         df['l12_mon_insu_buy_whl_tms'] = df['l12_mon_insu_buy_whl_tms'].astype("int16")
-        # features.add('l12_mon_insu_buy_whl_tms')
-        # mappings['int16'].append('l12_mon_insu_buy_whl_tms')
 
         # 近12个月黄金购买次数
         printCount(df['l12_mon_gld_buy_whl_tms'])
         df['l12_mon_gld_buy_whl_tms'].replace({r'\N': '0'}, inplace=True)
         df['l12_mon_gld_buy_whl_tms'] = df['l12_mon_gld_buy_whl_tms'].astype("int16")
-        # features.add('l12_mon_gld_buy_whl_tms')
-        # mappings['int16'].append('l12_mon_gld_buy_whl_tms')
 
         df['l12_mon_tms'] = df[['l12mon_buy_fin_mng_whl_tms', 'l12_mon_fnd_buy_whl_tms', 'l12_mon_insu_buy_whl_tms', 'l12_mon_gld_buy_whl_tms']].sum(axis=1)
         df['l12_mon_tms'] = df['l12_mon_tms'].astype("int16")
-        if args.verbose: df['l12_mon_tms'].hist(); plt.show()
+
+        if args.verbose: df['l12_mon_tms'].hist(); plt.show(); plt.close()
         # 分桶
         df['l12_mon_tms'] = pd.cut(df['l12_mon_tms'], bins=[-1, 10, 10000], labels=False)
         features.add('l12_mon_tms')
@@ -529,7 +524,7 @@ def process_data():
         "X": trainarray,
         "y": y,
         "X_test": testarray,
-        'id': test_id,
+        'test_id': test_id,
         'feature_names': features
     }
     np.savez_compressed(processedDataPath, **data)

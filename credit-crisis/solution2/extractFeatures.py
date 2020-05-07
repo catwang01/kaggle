@@ -38,15 +38,11 @@ def processingBeh(data, features, mappings):
     dftest = data['test']['beh']
 
     dropColumnInplace(dftrain, 'flag')
+    # sns.boxplot(x='page_no', y='page_tm', data=tmp)
+    # plt.show()
 
-    data['train']['newbeh'] = dftrain.groupby(['id', 'page_no'], as_index=False).count()
-    data['train']['newbeh'] = data['train']['newbeh'].pivot(values='page_tm', columns='page_no', index='id').fillna(0)
-    data['train']['newbeh'].columns = list(map(lambda x: 'page_no_' + x, data['train']['newbeh'].columns))
-    data['train']['newbeh'].head()
-
-    data['test']['newbeh'] = dftest.groupby(['id', 'page_no'], as_index=False).count()
-    data['test']['newbeh'] = data['test']['newbeh'].pivot(values='page_tm', columns='page_no', index='id').fillna(0)
-    data['test']['newbeh'].columns = list(map(lambda x: 'page_no_' + x, data['test']['newbeh'].columns))
+    data['train']['newbeh']= dftrain.groupby(['id'], as_index=False)['page_tm'].count()
+    data['test']['newbeh']= dftest.groupby(['id'], as_index=False)['page_tm'].count()
 
     # 29 个features
     features.update(

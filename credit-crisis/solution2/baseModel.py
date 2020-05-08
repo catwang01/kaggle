@@ -1,4 +1,5 @@
 from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.metrics import roc_auc_score
 from sklearn.externals import joblib
 from my_ort import ORT
 from utils import plotAuc, getNextVer
@@ -39,20 +40,21 @@ class baseTrainer:
         else:
             self.istune = istune
 
-    def fit(self, X_train, y_train, X_val, y_val, *args, **kwargs):
+    def fit(self, X, y, *args, **kwargs):
         if self.isupdate:
             if self.istune:
-                self.tune(X_train, y_train, X_val, y_val, *args, **kwargs)
+                self.tune(X, y, *args, **kwargs)
             else:
-                self._fit(X_train, y_train, X_val, y_val, *args, **kwargs)
+                self._fit(X, y, *args, **kwargs)
         else:
             self.model = joblib.load(os.path.join(root, self.modelName + '.model'))
         return self.model
 
     def predict(self, X):
-        return self.model.predict_proba(X)
+        return self.model.predict_proba(X)[:, 1]
 
-    def _fit(self, X_train, y_train, X_val, y_val, *args, **kwargs):
+    def _fit(self, X, y, *args, **kwargs):
+        X_train, X_val, y_train, y_val = train_test_split(X, y, random_state=SEED, test_size=TEST_SIZE)
         print("==================================================")
         print("Train Model {}".format(self.modelName))
         self.model.fit(X_train, y_train, *args, **kwargs)
@@ -60,22 +62,23 @@ class baseTrainer:
         y_train_hat = self.model.predict_proba(X_train)[:, 1]
         y_val_hat = self.model.predict_proba(X_val)[:, 1]
 
-        trainAuc = plotAuc(y_train, y_train_hat, "train")
-        valAuc = plotAuc(y_val, y_val_hat, "val")
+        trainAuc = roc_auc_score(y_train, y_train_hat)
+        valAuc = roc_auc_score(y_val, y_val_hat)
 
         print("Train auc: {} Val auc: {}".format(trainAuc, valAuc))
         joblib.dump(self.model, "{}".format(self.modelName + '.model'))
         print("Save Model {}".format(self.modelName))
         return self.model
 
-    def tune(self, X_train, y_train, X_val, y_val, *args, **kwargs):
+    def tune(self, X, y, *args, **kwargs):
 
+        X_train, X_val, y_train, y_val = train_test_split(X, y, random_state=SEED, test_size=TEST_SIZE)
         for paramName in self.tuned_params:
             print("==================================================")
             print('Tuning param:{} values: {}'.format(paramName, self.tuned_params[paramName]))
             clf = GridSearchCV(self.model, {paramName: self.tuned_params[paramName]}, scoring='roc_auc', cv=self.cv,
                                verbose=1, n_jobs=-1)
-            clf.fit(X_train, y_train)
+            clf.fit(X_train, y_train, *args, **kwargs)
 
             print("paramName: {} bestValue: {} TestScore: {} bestValScore; {}".format(
                 paramName,
@@ -90,9 +93,9 @@ class baseTrainer:
         joblib.dump(self.model, "{}".format(self.modelName + '.model'))
 
     def getOutput(self, X_test, test_id, X_val, y_val):
-        output = pd.DataFrame({'id': test_id, 'prob': self.model.predict_proba(X_test)[:, 1]})
+        output = pd.DataFrame({'id': test_id, 'prob': self.predict(X_test)})
 
-        valAuc = plotAuc(y_val, self.model.predict_proba(X_val)[:, 1])
+        valAuc = plotAuc(y_val, self.predict(X_val))
 
         outputPath = os.path.join(root, 'output-{modelName}-{valAuc:.4f}.txt'.format(
             modelName=self.modelName,
@@ -106,25 +109,23 @@ class ortTrainer(baseTrainer):
 
     def __init__(self, modelClass,
                  params=None, tuned_params=None, modelName=0,
-                 istune=False, isupdate=False, cv=5):
+                 istune=True, isupdate=False, cv=5):
 
-        super(ortTrainer, self).__init__(modelClass,
-                                         params=params, tuned_params=tuned_params,
-                                         modelName=modelName,
-                                         istune=istune, isupdate=isupdate,
-                                         cv=cv)
+        super(ortTrainer, self).__init__(modelClass, params=params, tuned_params=tuned_params,
+                                         modelName=modelName, istune=istune, isupdate=isupdate, cv=cv)
         # 构建正交实验表
         self.ort = ORT()
 
         # 获取参数正交表
         self.param_df = self.ort.genSets(self.tuned_params, mode=2)
+
         print(self.param_df)
         self.ort_res = None
         self.bestParams = None
 
-    def tune(self, X_train, y_train, X_val, y_val, *args, **kwargs):
-
-        df_params = self.param_df
+    def tune(self, X, y, *args, **kwargs):
+        X_train, X_val, y_train, y_val = train_test_split(X, y, random_state=SEED, test_size=TEST_SIZE)
+        df_params = self.param_df.copy()
         cur = 0
         total = len(df_params.index)
 
@@ -148,11 +149,9 @@ class ortTrainer(baseTrainer):
             time_start = time.time()
             model.fit(X_train, y_train, *args, **kwargs)
             time_elapsed = int(time.time() - time_start)
-            fpr, tpr, _ = roc_curve(y_train, model.predict_proba(X_train)[:, 1])
-            res = auc(fpr, tpr)
+            res = roc_auc_score(y_train, model.predict_proba(X_train)[:, 1])
+            res_val = roc_auc_score(y_val, model.predict_proba(X_val)[:, 1])
 
-            fpr, tpr, _ = roc_curve(y_val, model.predict_proba(X_val)[:, 1])
-            res_val = auc(fpr, tpr)
             print(tmp)
             print('res: {res:.4f}, res_val: {res_val:.4f} , time: {time}, num: {cur}/{total}'.format(res=res,
                                                                                                      res_val=res_val,

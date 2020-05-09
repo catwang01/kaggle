@@ -23,7 +23,6 @@ class baseTrainer:
         self.params = params
         self.model = modelClass(**params)
         self.cv = cv
-        self.feature_names = None
         self.other_params = params
         self.tuned_params = tuned_params
         self.modelName = modelName

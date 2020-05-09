@@ -22,7 +22,6 @@ def make_sample(old_feature_data, diff):
     new_min_feature_data = np.vstack((reshaped_feature, old_feature_data))
     return new_min_feature_data
 
-
 # 对不平衡的数据集imbalanced_data_arr2进行SMOTE采样操作，返回平衡数据集
 # :param imbalanced_data_arr2: 非平衡数据集
 # :return: 平衡后的数据集

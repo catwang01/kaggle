@@ -1,12 +1,8 @@
 from xgboost import XGBClassifier
-import numpy as np
-from sklearn.externals import joblib
-import pandas as pd
-from utils import load_data, plotAuc, getNextVer
+from sklearn.model_selection import train_test_split
 from path import *
+from utils import load_data
 from baseModel import ortTrainer
-
-
 
 params = {
     'objective': 'binary:logistic',
@@ -26,18 +22,22 @@ tuned_params = {
     "colsample_bytree": [0.3, 0.5, 0.7, 0.9],
 }
 
-trainer = ortTrainer(modelClass=XGBClassifier,
-                  params=params,
-                  tuned_params=tuned_params,
-                  isupdate=True,
-                  istune=True,
-                  modelName='xgb',
-                  dataPath=processedDataPath)
+X_train, y_train, X_test, test_id, feature_names = load_data(processedDataPath)
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, random_state=SEED, test_size=TEST_SIZE)
+trainer = ortTrainer(modelClass=XGBClassifier ,
+                     params=params,
+                     tuned_params=tuned_params,
+                     isupdate=True,
+                     istune=True,
+                     modelName='xgb')
 
-trainer.read_data()
-trainer.fit( eval_set=[(trainer.X_val, trainer.y_val)],
-                       early_stopping_rounds=10,
-                       eval_metric="auc",
-                       verbose=True)
-trainer.getOutput()
+trainer.fit( X_train, y_train,
+    eval_set=[(X_val, y_val)],
+    early_stopping_rounds=10,
+    eval_metric="auc",
+    verbose=True
+)
+
+
+
 

@@ -9,12 +9,14 @@ from lightgbm import LGBMClassifier
 
 params = {
     "boosting_type": "gbdt",
-    "learning_rate": 0.1,  # shrinkage
+    "learning_rate": 0.02,  # shrinkage
     "num_leaves": 2**11,
-    "subsample": 0.7,
-    "colsample_bytree": 1,
+    "subsample": 0.8,
+    "colsample_bytree": 0.7,
     "seed": SEED,
     'n_jobs': -1,
+    'reg_lambda': 0.8,
+    'max_depth': 8,
     'silent': 0,
 }
 
@@ -33,7 +35,7 @@ trainer = ortTrainer(modelClass=LGBMClassifier,
                      params=params,
                      tuned_params=tuned_params,
                      isupdate=True,
-                     istune=True,
+                     istune=False,
                      modelName='lgb')
 
 trainer.fit( X_train, y_train,
@@ -46,6 +48,9 @@ trainer.fit( X_train, y_train,
 trainer.getOutput(X_test, test_id, X_val, y_val)
 
 print(trainer.bestParams)
+
+dict(zip(trainer.model.feature_importances_, feature_names))
+
 
 # # 查看所有的结果
 # print(trainer.ort_res)

@@ -9,7 +9,6 @@ from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from utils import plotAuc, getFreq, fillnaInplace, dropInplaceByCondition, dropColumnInplace, isOutiler
 from path import *
-import json
 import numpy as np
 import argparse
 
@@ -17,7 +16,7 @@ pd.set_option('display.max_rows', 10)
 pd.set_option('display.max_columns', 10)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-v", "--verbose", type=bool, default=False, help="whether verbose or not")
+parser.add_argument("-v", "--verbose", type=bool, default=True, help="whether verbose or not")
 args = parser.parse_args()
 
 beh = pd.read_csv(behtestPath)
@@ -59,6 +58,10 @@ def processingTrd(data, features, mappings):
         data[stage]['newtrd'].columns = list(map(lambda x: 'Dat_Flg1_Cd' + "_" + x,  data[stage]['newtrd'].columns))
         data[stage]['newtrd'] = data[stage]['newtrd'].reset_index()
 
+        # 感觉将Dat_Flg1_Cd_B 改成正数会比较好？
+        data[stage]['newtrd']['totalTrd'] = data[stage]['newtrd']['Dat_Flg1_Cd_B'] + data[stage]['newtrd']['Dat_Flg1_Cd_C']
+        data[stage]['newtrd']['Dat_Flg1_Cd_B'] = - data[stage]['newtrd']['Dat_Flg1_Cd_B']
+
     # 交易金额
     features.update(data['train']['newtrd'].columns.values)
 
@@ -84,7 +87,6 @@ def processingTag(data, features, mappings):
         df['has_credit_but_not_debit'] = (df['cur_debit_cnt'] == 0) & (df['cur_credit_cnt'] != 0)
         df['has_credit_but_not_debit'] = df['has_credit_but_not_debit'].astype('int8')
         features.add('has_credit_but_not_debit')
-        mappings['encode'].append('has_credit_but_not_debit')
 
         # 持有招行借记卡天数
         printCount(df["cur_debit_min_opn_dt_cnt"])

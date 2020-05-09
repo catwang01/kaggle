@@ -1,6 +1,5 @@
 from matplotlib import pyplot as plt
 from utils import load_data
-from baseModel import ortTrainer, baseTrainer
 from sklearn.model_selection import train_test_split
 from path import *
 from sklearn.ensemble import RandomForestClassifier
@@ -41,10 +40,15 @@ print("Score prediction: {}".format(pccs))
 print(trainer.bestParams)
 
 sorted_importances, sorted_featurenames = zip(
-    *sorted(zip(trainer.model.feature_importances_, feature_names), reverse=True))
+    *sorted(zip(trainer.model.feature_importances_, feature_names), reverse=True)
+)
+
 plt.plot(sorted_importances)
 plt.title("变量累计贡献")
 plt.show()
 plt.plot(np.cumsum(sorted_importances))
 plt.title("累计贡献")
 plt.show()
+
+
+

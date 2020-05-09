@@ -22,8 +22,11 @@ tuned_params = {
     "colsample_bytree": [0.3, 0.5, 0.7, 0.9],
 }
 
+
 X_train, y_train, X_test, test_id, feature_names = load_data(processedDataPath)
+
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, random_state=SEED, test_size=TEST_SIZE)
+
 trainer = ortTrainer(modelClass=XGBClassifier ,
                      params=params,
                      tuned_params=tuned_params,

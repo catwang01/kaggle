@@ -1,4 +1,4 @@
-from baseModel import ortTrainer, baseTrainer
+from baseModel import ortTrainer
 from path import *
 from utils import load_data
 from sklearn.linear_model import LogisticRegression
@@ -14,7 +14,7 @@ tuned_params = {
 }
 
 X_train, y_train, X_test, test_id, feature_names = load_data(processedDataPath)
-trainer = baseTrainer(modelClass=LogisticRegression,
+trainer = ortTrainer(modelClass=LogisticRegression,
                       params=other_params,
                       tuned_params=tuned_params,
                       isupdate=True,

@@ -10,13 +10,14 @@ from path import root
 import os
 import re
 
-def plotAuc(y, yhat, xlabel=None):
+def plotAuc(y, yhat, xlabel=None, verbose=True):
     fpr, tpr, thresholds = roc_curve(y, yhat, pos_label=1)
     myauc = auc(fpr, tpr)
-    plt.plot(fpr, tpr)
-    plt.title("auc: {}".format(myauc))
-    if xlabel: plt.xlabel(xlabel)
-    plt.show()
+    if verbose:
+        plt.plot(fpr, tpr)
+        plt.title("auc: {}".format(myauc))
+        if xlabel: plt.xlabel(xlabel)
+        plt.show()
     return myauc
 
 def load_data(dataPath):

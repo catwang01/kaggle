@@ -27,10 +27,31 @@ tag = pd.read_csv(tagtestPath)
 assert trd.id.unique().shape[0] == 4787
 assert tag.id.unique().shape[0] == 6000
 
+def printCount2(data, tablename, col):
+    if args.verbose:
+        train = data['train'][tablename][col]
+        test = data['test'][tablename][col]
+
+        uniq = list(train.unique())
+        print("train dtype: ",  train.dtype)
+        print(train.value_counts(dropna=False))
+
+        print("test dtype: ",  test.dtype)
+        print(test.value_counts(dropna=False))
+        plt.subplot(121)
+        sns.countplot(test, order=uniq)
+        plt.title('train')
+
+        plt.subplot(122)
+        sns.countplot(train, order=uniq)
+        plt.title('test')
+        plt.show()
+
 def printCount(df):
     if args.verbose:
         print(df.value_counts(dropna=False))
-        print("dtype:", df.dtype)
+        print(df.dtype)
+
 
 def processingBeh(data, features, mappings):
     dftrain = data['train']['beh']
@@ -91,37 +112,44 @@ def processingTag(data, features, mappings):
         # 持有招行借记卡天数
         printCount(df["cur_debit_min_opn_dt_cnt"])
         df["cur_debit_min_opn_dt_cnt"] = df["cur_debit_min_opn_dt_cnt"].astype("int16")
+        df["cur_debit_min_opn_dt_cnt"] = pd.cut(df["cur_debit_min_opn_dt_cnt"], bins=[-2, 183, 365, 10000], labels=False)
         # 分别代表半年以下、半年到1年、1年以上
-        df["cur_debit_min_opn_dt_cnt"] = pd.cut(df["cur_debit_min_opn_dt_cnt"], bins=[-2, 183, 365, 5000], labels=False)
+        # df["cur_debit_min_opn_dt_cnt"] =
         features.add("cur_debit_min_opn_dt_cnt")
 
         # 持有招行信用卡天数
         printCount(df["cur_credit_min_opn_dt_cnt"])
         df["cur_credit_min_opn_dt_cnt"] = df["cur_credit_min_opn_dt_cnt"].astype("int16")
         # 分别代表半年以下、半年到1年、1年以上
-        df["cur_credit_min_opn_dt_cnt"] = pd.cut(df["cur_credit_min_opn_dt_cnt"], bins=[-2, 183, 365, 5000], labels=False)
+        df["cur_credit_min_opn_dt_cnt"] = pd.cut(df["cur_credit_min_opn_dt_cnt"], bins=[-2, 183, 365, 10000], labels=False)
         features.add("cur_credit_min_opn_dt_cnt")
 
         # 招行借记卡持卡最高等级代码
         printCount(df["cur_debit_crd_lvl"])
+        df["cur_debit_crd_lvl"].replace({'80': '40', '60': '40'}, inplace=True)
         features.add("cur_debit_crd_lvl")
         mappings['encode'].append("cur_debit_crd_lvl")
 
         # 招行信用卡持卡最高等级代码
         # 出现 \N，在 train 中的drop掉；test中的填充为 -1
         printCount(df["hld_crd_card_grd_cd"])
+        if args.verbose: sns.countplot(data['test']['tag']["hld_crd_card_grd_cd"]); plt.show()
+        if args.verbose: sns.countplot(data['train']['tag']["hld_crd_card_grd_cd"]); plt.show()
         if stage == 'train':
             dropInplaceByCondition(df, df['hld_crd_card_grd_cd'] == r'\N')
         else:
             df['hld_crd_card_grd_cd'].replace({r'\N': '-1'}, inplace=True)
+
         # 转化为整数才可以cut
         df['hld_crd_card_grd_cd'] = df['hld_crd_card_grd_cd'].astype('int8')
-        df['hld_crd_card_grd_cd'] = pd.cut(df['hld_crd_card_grd_cd'], bins=[-1, 10, 20, 100], include_lowest=True, labels=False)
+        df['hld_crd_card_grd_cd'] = pd.cut(df['hld_crd_card_grd_cd'], bins=[-1, 0, 10, 20, 100], include_lowest=True, labels=False)
+
+        if args.verbose: sns.countplot(df['hld_crd_card_grd_cd']); plt.show()
         features.add("hld_crd_card_grd_cd")
         mappings['encode'].append("hld_crd_card_grd_cd")
 
         # 信用卡活跃标识
-        printCount(df['crd_card_act_ind'])
+        printCount2(data, 'tag', 'crd_card_act_ind')
         if stage=='train':
             dropInplaceByCondition(df, df['crd_card_act_ind'] == r'\N')
         else:
@@ -130,7 +158,7 @@ def processingTag(data, features, mappings):
         mappings['encode'].append('crd_card_act_ind')
 
         # 最近一年信用卡消费金额分层
-        printCount(df['l1y_crd_card_csm_amt_dlm_cd'])
+        printCount2(data, 'tag', 'l1y_crd_card_csm_amt_dlm_cd')
         if stage == 'train':
             dropInplaceByCondition(df, df['l1y_crd_card_csm_amt_dlm_cd'] == r'\N')
         else:
@@ -140,40 +168,48 @@ def processingTag(data, features, mappings):
         mappings['encode'].append('l1y_crd_card_csm_amt_dlm_cd')
 
         # 信用卡还款方式
-        printCount(df['atdd_type'])
+        printCount2(data, 'tag', 'atdd_type')
         df['atdd_type'].replace({r'\N': '2'}, inplace=True)
         fillnaInplace(df['atdd_type'], '2')
         features.add('atdd_type')
         mappings['encode'].append('atdd_type')
 
-        # 信用卡永久信用额度分层
-        printCount(df['perm_crd_lmt_cd'])
+        ############# 信用卡永久信用额度分层
+        printCount2(data, 'tag', 'perm_crd_lmt_cd')
         if stage == 'train':
             dropInplaceByCondition(df, df['perm_crd_lmt_cd'] == '-1')
         else:
-            df['perm_crd_lmt_cd'].replace({'-1':'0'}, inplace=True)
+            df['perm_crd_lmt_cd'].replace({'-1': '0'}, inplace=True)
         features.add('perm_crd_lmt_cd')
         mappings['encode'].append('perm_crd_lmt_cd')
+        ############
 
         ############### 年龄
         # 对年龄分桶
-        printCount(df['age'])
+        printCount2(data, 'tag', 'age')
         df['age'] = df['age'].astype('int8')
-        df['age'].hist(); plt.show(); plt.close()
+        if args.verbose: df['age'].hist(); plt.show()
+        if args.verbose: data['test']['tag']['age'].hist(); plt.show()
+
         df['newage'] = pd.cut(df['age'], bins=[0,20,30,40,60,100], labels=False)
         features.add('newage')
         mappings['encode'].append('newage')
         #################
 
         # 性别
-        printCount(df['gdr_cd'])
+        printCount2(data, 'tag', 'gdr_cd')
         # 出现 \N 不做处理
-        # dropInplace(df, df['gdr_cd']==r'\N')
+        if stage == 'train':
+            dropInplaceByCondition(df, df['gdr_cd']==r'\N')
+        else:
+            df['gdr_cd'].replace({r'\N': 'M'}, inplace=True)
+
         features.add('gdr_cd')
         mappings['encode'].append('gdr_cd')
 
         # 婚姻
-        printCount(df['mrg_situ_cd'])
+        printCount2(data, 'tag', 'mrg_situ_cd')
+        df['mrg_situ_cd'].replace({'~': 'O', 'Z': 'O', r'\N': 'O'}, inplace=True)
         features.add('mrg_situ_cd')
         mappings['encode'].append('mrg_situ_cd')
 
@@ -191,8 +227,9 @@ def processingTag(data, features, mappings):
         ###########
 
         # 学历
-        printCount(df['acdm_deg_cd'])
-        fillnaInplace(df['acdm_deg_cd'], 'G')
+        # C F D \N nan 合并 为 C类
+        printCount2(data, 'tag', 'acdm_deg_cd')
+        df['acdm_deg_cd'].replace({'F': 'C', 'D': 'C', r'\N': 'C', np.nan: 'C'}, inplace=True)
         features.add('acdm_deg_cd')
         mappings['encode'].append('acdm_deg_cd')
 
@@ -206,7 +243,7 @@ def processingTag(data, features, mappings):
         # 工作年限
         printCount(df['job_year'])
         df['job_year'].replace({r'\N': '0'}, inplace=True)
-        df['job_year'].value_counts().hist(); plt.show(); plt.close()
+        if args.verbose: df['job_year'].value_counts().hist(); plt.show()
         df['job_year'] = df['job_year'].astype(int)
         df['new_job_year'] = pd.cut(df['job_year'], bins=[-1, 0, 5, 8, 100])
         df['new_job_year'].value_counts()
@@ -370,12 +407,13 @@ def processingTag(data, features, mappings):
 
         ################## 合为一个
         # # 近12个月理财产品购买次数
+
         printCount(df['l12mon_buy_fin_mng_whl_tms'])
         df['l12mon_buy_fin_mng_whl_tms'].replace({r'\N': '0'}, inplace=True)
         df['l12mon_buy_fin_mng_whl_tms'] = df['l12mon_buy_fin_mng_whl_tms'].astype("int16")
 
         # 近12个月基金购买次数
-        printCount(df['l12_mon_fnd_buy_whl_tms'])
+        printCount2(data, 'tag', 'l12_mon_fnd_buy_whl_tms')
         df['l12_mon_fnd_buy_whl_tms'].replace({r'\N': '0'}, inplace=True)
         df['l12_mon_fnd_buy_whl_tms'] = df['l12_mon_fnd_buy_whl_tms'].astype('int16')
 
@@ -383,6 +421,13 @@ def processingTag(data, features, mappings):
         printCount(df['l12_mon_insu_buy_whl_tms'])
         df['l12_mon_insu_buy_whl_tms'].replace({r'\N': '0'}, inplace=True)
         df['l12_mon_insu_buy_whl_tms'] = df['l12_mon_insu_buy_whl_tms'].astype("int16")
+
+        plt.figure()
+        sns.kdeplot(df['l12_mon_fnd_buy_whl_tms'][df['l12_mon_fnd_buy_whl_tms'] > 1])
+        sns.kdeplot(df['l12_mon_insu_buy_whl_tms'][df['l12_mon_insu_buy_whl_tms'] > 1])
+        sns.kdeplot(df['l12mon_buy_fin_mng_whl_tms'][df['l12mon_buy_fin_mng_whl_tms'] > 1])
+        sns.kdeplot(df['l12_mon_gld_buy_whl_tms'][df['l12_mon_gld_buy_whl_tms'] > 1])
+        plt.show()
 
         # 近12个月黄金购买次数
         printCount(df['l12_mon_gld_buy_whl_tms'])
@@ -494,8 +539,8 @@ def process_data():
     for table in ['tag', 'trd']:
         castType(data['train'][table], data['test'][table], mappings)
 
-    if 'id' in features: features.remove('id')
-    if 'flag' in features: features.remove('flag')
+
+    features = features - {'id', 'flag'}
     features = list(features)
     train = pd.merge(data['train']['tag'], data['train']['newtrd'], on='id', how='left')
     train = pd.merge(train, data['train']['newbeh'], on='id', how='left')
@@ -504,20 +549,12 @@ def process_data():
     train.fillna(0, inplace=True)
     trainarray = train.values
 
-    # encodedFeatures = train[mappings['encode']]
-    # y = train['flag'].values.ravel()
-    # train.drop(columns=mappings['encode'] + ['id', 'flag'], inplace=True)
-    # onehot = OneHotEncoder()
-    # trainarray = np.c_[train.values, onehot.fit_transform(encodedFeatures).toarray()]
-
     test = pd.merge(data['test']['tag'], data['test']['newtrd'], on='id', how='left')
     test = pd.merge(test, data['test']['newbeh'], on='id', how='left')
     test.fillna(0, inplace=True)
     test_id = test.id.values
     test = test[features]
-    # encodedFeatures = test[mappings['encode']]
-    # test.drop(columns=mappings['encode'] + ['id'], inplace=True)
-    # testarray = np.c_[test.values, onehot.transform(encodedFeatures).toarray()]
+
     assert train.shape[1] == test.shape[1]
     assert test.shape[0] == 6000
     testarray = test.values

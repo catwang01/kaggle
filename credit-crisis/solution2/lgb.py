@@ -18,6 +18,7 @@ params = {
     'reg_lambda': 0.8,
     'max_depth': 8,
     'silent': 0,
+    "n_estimators": 500,
 }
 
 tuned_params = {
@@ -29,7 +30,7 @@ tuned_params = {
 }
 
 # 训练模型
-X_train, y_train, X_test, test_id, feature_names = load_data(processedDataPath)
+X_train, y_train, X_test, test_id, feature_names = load_data(reinbalancedDataPath)
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, random_state=SEED, test_size=TEST_SIZE)
 trainer = ortTrainer(modelClass=LGBMClassifier,
                      params=params,
@@ -40,7 +41,7 @@ trainer = ortTrainer(modelClass=LGBMClassifier,
 
 trainer.fit( X_train, y_train,
     eval_set=[(X_val, y_val)],
-    early_stopping_rounds=10,
+    early_stopping_rounds=100,
     eval_metric="auc",
     verbose=True
 )

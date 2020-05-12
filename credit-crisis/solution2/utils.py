@@ -76,7 +76,6 @@ def trainModel(model, X_train, y_train, X_val, y_val, modelName=None, number=0):
 
 def getLatestVer(pattern):
     for file in sorted(os.listdir(root), key=lambda x: os.path.getctime(x), reverse=True):
-        # print(file)
         ret = re.search(pattern, file)
         if ret is not None:
             i = int(ret.group(1))

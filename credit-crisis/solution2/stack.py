@@ -9,7 +9,7 @@ from path import *
 NFOLDS = 3
 kf = KFold(n_splits=NFOLDS, random_state=SEED)
 
-X_train, y_train, X_test, test_id, feature_names = load_data(processedDataPath)
+X_train, y_train, X_test, test_id, feature_names = load_data(reinbalancedDataPath)
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, random_state=SEED, test_size=TEST_SIZE)
 
 class TrainerWrapper:

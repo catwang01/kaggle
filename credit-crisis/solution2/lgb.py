@@ -37,7 +37,7 @@ trainer = ortTrainer(modelClass=LGBMClassifier,
                      tuned_params=tuned_params,
                      isupdate=True,
                      istune=False,
-                     modelName='lgb')
+                     modelName='lgb-ordinal')
 
 trainer.fit( X_train, y_train,
     eval_set=[(X_val, y_val)],

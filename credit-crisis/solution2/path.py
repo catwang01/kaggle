@@ -16,9 +16,15 @@ tagtrainPath = '/Users/ed/kaggle/credit-crisis/train/训练数据集_tag.csv'
 behtrainPath = '/Users/ed/kaggle/credit-crisis/train/训练数据集_beh.csv'
 trdtrainPath = '/Users/ed/kaggle/credit-crisis/train/训练数据集_trd.csv'
 
-tagtestPath = '/Users/ed/kaggle/credit-crisis/test/评分数据集_tag.csv'
-behtestPath = '/Users/ed/kaggle/credit-crisis/test/评分数据集_beh.csv'
-trdtestPath = '/Users/ed/kaggle/credit-crisis/test/评分数据集_trd.csv'
+# tagtestPath = '/Users/ed/kaggle/credit-crisis/test/评分数据集_tag.csv'
+# behtestPath = '/Users/ed/kaggle/credit-crisis/test/评分数据集_beh.csv'
+# trdtestPath = '/Users/ed/kaggle/credit-crisis/test/评分数据集_trd.csv'
+
+# 使用b榜数据
+tagtestPath = '/Users/ed/kaggle/credit-crisis/test_b/评分数据集_tag_b.csv'
+behtestPath = '/Users/ed/kaggle/credit-crisis/test_b/评分数据集_beh_b.csv'
+trdtestPath = '/Users/ed/kaggle/credit-crisis/test_b/评分数据集_trd_b.csv'
+
 
 pcaDataPath = os.path.join(root, 'pcaData.npz')
 processedDataPath = os.path.join(root, 'processedData.npz')

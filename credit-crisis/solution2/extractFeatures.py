@@ -24,8 +24,8 @@ trd = pd.read_csv(trdtestPath)
 tag = pd.read_csv(tagtestPath)
 
 # 1000+的人没有交易记录
-assert trd.id.unique().shape[0] == 4787
-assert tag.id.unique().shape[0] == 6000
+# assert trd.id.unique().shape[0] == 4787
+# assert tag.id.unique().shape[0] == 6000
 
 def printCount2(data, tablename, col):
     if args.verbose:
@@ -422,17 +422,17 @@ def processingTag(data, features, mappings):
         df['l12_mon_insu_buy_whl_tms'].replace({r'\N': '0'}, inplace=True)
         df['l12_mon_insu_buy_whl_tms'] = df['l12_mon_insu_buy_whl_tms'].astype("int16")
 
+        # 近12个月黄金购买次数
+        printCount(df['l12_mon_gld_buy_whl_tms'])
+        df['l12_mon_gld_buy_whl_tms'].replace({r'\N': '0'}, inplace=True)
+        df['l12_mon_gld_buy_whl_tms'] = df['l12_mon_gld_buy_whl_tms'].astype("int16")
+
         plt.figure()
         sns.kdeplot(df['l12_mon_fnd_buy_whl_tms'][df['l12_mon_fnd_buy_whl_tms'] > 1])
         sns.kdeplot(df['l12_mon_insu_buy_whl_tms'][df['l12_mon_insu_buy_whl_tms'] > 1])
         sns.kdeplot(df['l12mon_buy_fin_mng_whl_tms'][df['l12mon_buy_fin_mng_whl_tms'] > 1])
         sns.kdeplot(df['l12_mon_gld_buy_whl_tms'][df['l12_mon_gld_buy_whl_tms'] > 1])
         plt.show()
-
-        # 近12个月黄金购买次数
-        printCount(df['l12_mon_gld_buy_whl_tms'])
-        df['l12_mon_gld_buy_whl_tms'].replace({r'\N': '0'}, inplace=True)
-        df['l12_mon_gld_buy_whl_tms'] = df['l12_mon_gld_buy_whl_tms'].astype("int16")
 
         df['l12_mon_tms'] = df[['l12mon_buy_fin_mng_whl_tms', 'l12_mon_fnd_buy_whl_tms', 'l12_mon_insu_buy_whl_tms', 'l12_mon_gld_buy_whl_tms']].sum(axis=1)
         df['l12_mon_tms'] = df['l12_mon_tms'].astype("int16")
@@ -556,7 +556,7 @@ def process_data():
     test = test[features]
 
     assert train.shape[1] == test.shape[1]
-    assert test.shape[0] == 6000
+    # assert test.shape[0] == 6000
     testarray = test.values
 
     data = {
